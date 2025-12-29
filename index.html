@@ -4,36 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>木之眼力｜文字尋找</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS CDN (用於快速渲染美觀 UI) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
     
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: {
-              sans: ['"Noto Sans TC"', 'sans-serif'],
-            },
+            fontFamily: { sans: ['"Noto Sans TC"', 'sans-serif'] },
             colors: {
-              wood: {
-                50: '#fdf8f6',
-                100: '#f2e8e5',
-                200: '#eaddd7',
-                300: '#e0cec7',
-                400: '#d2bab0',
-                500: '#a18e87',
-                600: '#8a7a74',
-                700: '#72635e',
-                800: '#5e514d',
-                900: '#4a403d',
-              },
-              nature: {
-                light: '#e9f5e9',
-                main: '#4caf50',
-                dark: '#2e7d32',
-              }
+              wood: { 50: '#fdf8f6', 100: '#f2e8e5', 200: '#eaddd7', 300: '#e0cec7', 400: '#d2bab0', 500: '#a18e87', 600: '#8a7a74', 700: '#72635e', 800: '#5e514d', 900: '#4a403d' },
+              nature: { light: '#e9f5e9', main: '#4caf50', dark: '#2e7d32' }
             }
           }
         }
@@ -56,24 +38,249 @@
         background-size: 20px 20px;
         background-position: 0 0, 10px 10px;
       }
-      /* Animation classes */
+      .hidden-force { display: none !important; }
       .fade-in { animation: fadeIn 0.3s ease-out; }
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-        "react/": "https://aistudiocdn.com/react@^19.2.0/",
-        "react": "https://aistudiocdn.com/react@^19.2.0"
+      
+      /* 重要：確保第一排文字不被頂部選單遮擋 */
+      .game-container {
+        padding-top: 80px; /* 手機版預留充足空間 */
       }
-    }
-    </script>
-<link rel="stylesheet" href="/index.css">
+      @media (min-width: 768px) {
+        .game-container { padding-top: 100px; }
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
 </head>
-<body class="wood-texture">
-    <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+<body class="wood-texture text-wood-900">
+
+    <!-- 1. 開始畫面 -->
+    <div id="screen-start" class="fixed inset-0 w-full h-full flex items-center justify-center p-4 z-50 bg-wood-50 wood-texture">
+        <div class="max-w-md w-full bg-white/90 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-xl border-2 border-wood-300 text-center fade-in">
+            <div class="text-5xl mb-4">🌳</div>
+            <h1 class="text-[7.5vw] sm:text-4xl font-black text-wood-900 mb-6 tracking-normal whitespace-nowrap">木之眼力｜文字尋找</h1>
+            
+            <div class="bg-wood-50 p-4 rounded-xl border border-wood-200 text-left mb-6">
+                <p class="text-wood-700 mb-2 font-bold text-lg">肝主目，目主清明</p>
+                <p class="text-sm text-wood-600 mb-4 leading-relaxed">木行對應臟腑為肝膽，而肝膽與眼睛的明亮與專注度有關。</p>
+                <h2 class="font-bold text-wood-800 mb-2 border-b border-wood-200 pb-1">📜 規則說明</h2>
+                <ul class="text-sm space-y-2 text-wood-700">
+                    <li>● 限時 30 秒，找出 10 個「<span class="text-nature-dark font-bold">村</span>」字</li>
+                    <li>● 點選正確顯示綠圈，錯誤顯示紅圈</li>
+                    <li>● 結束後依數量給予五行健康建議</li>
+                </ul>
+            </div>
+            <button onclick="startGameFlow()" class="w-full bg-nature-dark hover:bg-green-800 text-white font-bold py-3 rounded-xl text-xl shadow-lg transition-transform active:scale-95">開始挑戰</button>
+        </div>
+    </div>
+
+    <!-- 2. 遊戲主畫面 -->
+    <div id="screen-game" class="hidden-force min-h-screen flex flex-col">
+        <!-- 頂部導覽列 -->
+        <header class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur shadow-md border-b border-wood-200 h-20 px-4">
+            <div class="max-w-6xl mx-auto h-full flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">⏳</span>
+                    <span id="timer" class="font-mono text-3xl font-bold text-wood-900">30s</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="showRules()" class="bg-wood-100 text-wood-800 px-3 py-1 rounded font-bold border border-wood-300">規則</button>
+                    <button onclick="restartGame()" class="bg-wood-600 text-white px-3 py-1 rounded font-bold">重來</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 遊戲網格 -->
+        <main class="game-container flex-1 px-4 pb-20">
+            <div id="grid" class="max-w-6xl mx-auto grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 sm:gap-3">
+                <!-- 由 JS 動態生成 -->
+            </div>
+        </main>
+    </div>
+
+    <!-- 3. 倒數計時遮罩 -->
+    <div id="overlay-countdown" class="hidden-force fixed inset-0 z-50 flex items-center justify-center bg-wood-900/40 backdrop-blur-sm">
+        <div id="countdown-text" class="text-9xl font-bold text-white drop-shadow-lg">3</div>
+    </div>
+
+    <!-- 4. 結果彈窗 -->
+    <div id="modal-result" class="hidden-force fixed inset-0 z-50 flex items-center justify-center p-4 bg-wood-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center fade-in">
+            <div class="text-6xl mb-4">🌳</div>
+            <h2 class="text-2xl font-bold text-wood-900 mb-2">挑戰結束！</h2>
+            <p class="text-lg text-wood-600 mb-4">你在 30 秒內找到了 <span id="res-found" class="text-nature-dark font-black text-2xl">0</span> 個「村」</p>
+            
+            <div class="bg-wood-50 p-4 rounded-xl border-2 border-wood-200 mb-6">
+                <h3 id="res-title" class="text-xl font-bold text-nature-dark mb-1"></h3>
+                <p id="res-desc" class="text-wood-700"></p>
+            </div>
+            
+            <button onclick="startGameFlow()" class="w-full bg-nature-dark hover:bg-green-800 text-white font-bold py-3 rounded-xl text-lg shadow-md">再玩一次</button>
+        </div>
+    </div>
+
+    <!-- 5. 規則彈窗 (遊戲中) -->
+    <div id="modal-rules" class="hidden-force fixed inset-0 z-50 flex items-center justify-center p-4 bg-wood-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full relative">
+            <button onclick="closeRules()" class="absolute top-4 right-4 text-wood-400">✕</button>
+            <h3 class="text-xl font-bold text-center mb-4">📜 遊戲規則</h3>
+            <ul class="space-y-3 text-wood-700">
+                <li>1. 找出所有「<span class="text-nature-dark font-bold">村</span>」字（共有 10 個）</li>
+                <li>2. 剩下的都是「材」字</li>
+                <li>3. 點錯會紅圈警示並扣除一點點專注時間</li>
+            </ul>
+            <button onclick="closeRules()" class="mt-6 w-full py-2 bg-wood-100 rounded-lg font-bold">返回遊戲</button>
+        </div>
+    </div>
+
+    <script>
+        // 遊戲設定
+        const TARGET = '村';
+        const DISTRACTOR = '材';
+        const TOTAL_CELLS = 144;
+        const TARGET_COUNT = 10;
+        const DURATION = 30;
+
+        let timeLeft = DURATION;
+        let foundCount = 0;
+        let timerInterval = null;
+        let isPlaying = false;
+        let gridData = [];
+
+        // 初始化/切換畫面
+        function startGameFlow() {
+            document.getElementById('screen-start').classList.add('hidden-force');
+            document.getElementById('modal-result').classList.add('hidden-force');
+            document.getElementById('screen-game').classList.remove('hidden-force');
+            startCountdown();
+        }
+
+        function startCountdown() {
+            const overlay = document.getElementById('overlay-countdown');
+            const text = document.getElementById('countdown-text');
+            overlay.classList.remove('hidden-force');
+            let count = 3;
+            text.textContent = count;
+            
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    text.textContent = count;
+                } else {
+                    clearInterval(interval);
+                    overlay.classList.add('hidden-force');
+                    initGame();
+                }
+            }, 800);
+        }
+
+        function initGame() {
+            timeLeft = DURATION;
+            foundCount = 0;
+            isPlaying = true;
+            gridData = generateGridData();
+            renderGrid();
+            updateTimerUI();
+            
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerUI();
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function generateGridData() {
+            let data = [];
+            // 加入目標
+            for (let i = 0; i < TARGET_COUNT; i++) {
+                data.push({ id: `t-${i}`, char: TARGET, isTarget: true, clicked: false });
+            }
+            // 加入干擾
+            for (let i = 0; i < TOTAL_CELLS - TARGET_COUNT; i++) {
+                data.push({ id: `d-${i}`, char: DISTRACTOR, isTarget: false, clicked: false });
+            }
+            // 洗牌
+            return data.sort(() => Math.random() - 0.5);
+        }
+
+        function renderGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+            gridData.forEach((item, index) => {
+                const cell = document.createElement('div');
+                cell.className = "relative aspect-square flex items-center justify-center text-3xl font-bold bg-white rounded-lg shadow-sm border border-wood-100 cursor-pointer active:bg-wood-100 transition-colors";
+                cell.textContent = item.char;
+                cell.onclick = () => handleCellClick(index, cell);
+                gridEl.appendChild(cell);
+            });
+        }
+
+        function handleCellClick(index, el) {
+            if (!isPlaying) return;
+            const item = gridData[index];
+            if (item.clicked) return;
+
+            if (item.isTarget) {
+                item.clicked = true;
+                foundCount++;
+                // 永久綠圈
+                el.innerHTML += `<div class="absolute inset-1 rounded-full border-4 border-nature-main pointer-events-none"></div>`;
+                if (foundCount === TARGET_COUNT) endGame();
+            } else {
+                // 短暫紅圈
+                const red = document.createElement('div');
+                red.className = "absolute inset-1 rounded-full border-4 border-red-500 pointer-events-none";
+                el.appendChild(red);
+                setTimeout(() => red.remove(), 500);
+            }
+        }
+
+        function updateTimerUI() {
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = `${timeLeft}s`;
+            if (timeLeft <= 5) {
+                timerEl.classList.add('text-red-600', 'animate-pulse');
+            } else {
+                timerEl.classList.remove('text-red-600', 'animate-pulse');
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            
+            const result = calculateResult(foundCount);
+            document.getElementById('res-found').textContent = foundCount;
+            document.getElementById('res-title').textContent = result.title;
+            document.getElementById('res-desc').textContent = result.desc;
+            document.getElementById('modal-result').classList.remove('hidden-force');
+        }
+
+        function calculateResult(count) {
+            if (count >= 8) return { title: '肝氣舒展，目明心清', desc: '太厲害了！你的肝氣充足，視覺與專注力都處於巔峰狀態。' };
+            if (count >= 5) return { title: '肝氣尚可，專注有餘', desc: '表現不錯！建議平時多看遠方綠色植物，保持心情愉快。' };
+            return { title: '肝氣不足，需多調養', desc: '別太累了，這代表你的眼睛需要休息。早點睡覺就是最好的養肝法！' };
+        }
+
+        function restartGame() {
+            if (confirm('確定要重新開始嗎？')) {
+                clearInterval(timerInterval);
+                startGameFlow();
+            }
+        }
+
+        function showRules() { document.getElementById('modal-rules').classList.remove('hidden-force'); }
+        function closeRules() { document.getElementById('modal-rules').classList.add('hidden-force'); }
+
+    </script>
 </body>
 </html>
