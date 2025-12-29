@@ -1,40 +1,77 @@
-import React from 'react';
-import { GridItem, CellState } from '../types';
-
-interface GameGridProps {
-  items: GridItem[];
-  onItemClick: (id: string) => void;
-  isInteractable: boolean;
-}
-
-export const GameGrid: React.FC<GameGridProps> = ({ items, onItemClick, isInteractable }) => {
-  return (
-    <div className="w-full max-w-6xl mx-auto p-4 pt-24 md:pt-24 pb-40">
-      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-3 sm:gap-4 select-none">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => isInteractable && item.state === CellState.IDLE && onItemClick(item.id)}
-            className={`
-              relative aspect-square flex items-center justify-center text-2xl sm:text-3xl font-sans cursor-pointer
-              transition-colors duration-200 rounded-lg
-              ${isInteractable ? 'hover:bg-wood-200 active:bg-wood-300' : ''}
-              bg-white shadow-sm border border-wood-100
-            `}
-          >
-            {/* The Character */}
-            <span className="text-wood-800 z-10 font-bold text-3xl sm:text-4xl">{item.char}</span>
-
-            {/* Visual Feedback Circles */}
-            {item.state === CellState.CORRECT && (
-              <div className="absolute inset-1 rounded-full border-4 border-nature-main opacity-80 z-0"></div>
-            )}
-            {item.state === CellState.WRONG && (
-              <div className="absolute inset-1 rounded-full border-4 border-red-500 opacity-80 z-0"></div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>木之眼力｜文字尋找</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Noto Sans TC"', 'sans-serif'],
+            },
+            colors: {
+              wood: {
+                50: '#fdf8f6',
+                100: '#f2e8e5',
+                200: '#eaddd7',
+                300: '#e0cec7',
+                400: '#d2bab0',
+                500: '#a18e87',
+                600: '#8a7a74',
+                700: '#72635e',
+                800: '#5e514d',
+                900: '#4a403d',
+              },
+              nature: {
+                light: '#e9f5e9',
+                main: '#4caf50',
+                dark: '#2e7d32',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: 'Noto Sans TC', sans-serif;
+        background-color: #fdf8f6;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+      .wood-texture {
+        background-color: #fcf6f0;
+        background-image: radial-gradient(#d4c5b8 0.5px, transparent 0.5px), radial-gradient(#d4c5b8 0.5px, #fcf6f0 0.5px);
+        background-size: 20px 20px;
+        background-position: 0 0, 10px 10px;
+      }
+      /* Animation classes */
+      .fade-in { animation: fadeIn 0.3s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0"
+      }
+    }
+    </script>
+</head>
+<body class="wood-texture">
+    <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
+</body>
+</html>
